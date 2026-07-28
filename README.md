@@ -35,16 +35,31 @@ an MCP server (`src/app/api/[transport]/route.ts`, reachable at `/api/mcp`) with
 agent (the AIOS `daily-brief` skill, updated with a Blueprint section) calls them directly
 after evaluating the real sources itself. No per-source sync workers, no scheduled jobs yet.
 
-Connect a local Claude Code session to it with:
+Connect a local Claude Code session to the dev server with:
 
 ```bash
 claude mcp add --transport http blueprint http://localhost:3211/api/mcp
 ```
 
+The deployed endpoint (`https://blueprint.tristonyoder.com/api/mcp`) is bearer-token gated —
+`MCP_AUTH_TOKEN` is set via the paired nix-config secret (`blueprint-mcp-token`), and any
+caller must send `Authorization: Bearer <token>`. `claude mcp add` supports this with
+`--header "Authorization: Bearer <token>"`.
+
 Per PRODUCT.md's "signal, not noise" principle, every tool's description tells the calling
 agent to check `list_cards` first (avoid duplicate flags) and to only create a card for a
 genuine, nameable deviation or alignment — never routine status. `resolve_redline` is a hard
 delete; v1 keeps no history.
+
+**How an automated agent (e.g. the daily-brief skill) actually reaches this:** not by
+exposing the endpoint publicly. `blueprint.tristonyoder.com` resolves to `david`'s Tailscale
+address — unreachable from the open internet by design (the vHost is internal-only, no
+Cloudflare Tunnel). A locally-bridged connector (the same mechanism that lets a scheduled
+agent call local-only integrations like the Apple Mail MCP — an outbound tunnel from the
+machine running the connector, not an inbound connection to it) reaches it fine, since that
+machine is itself on the tailnet. Register it as a custom connector the same way those are
+configured, pointed at the real URL + bearer header above — not as a public-internet
+integration.
 
 Once this loop is proven out, the plan (per conversation, not yet built) is to replace
 individual agent-written cards with real non-agentic sync adapters per source (Asana and
@@ -76,8 +91,7 @@ container) behind Caddy via nix-config's `vHosts` registry, at `blueprint.tristo
 the same mechanism used for the rest of that infra — see `~/Projects/nix-config`.
 
 **Not yet wired up / open items:**
-- No `DATABASE_URL`/secrets wired via agenix yet — local dev currently points at a
-  Homebrew-installed Postgres on this Mac, not `david`'s.
-- The MCP endpoint has no auth yet — fine for local-only use, not for exposing beyond
-  the tailnet.
+- `drizzle-kit migrate` isn't run automatically on deploy — it's a build-time
+  devDependency, not part of the standalone runtime output. Run it manually after first
+  deploy and after any schema change (see the comment in `blueprint.nix`).
 - Goal-authoring UI still doesn't exist — goals are seeded from `mock-data.ts` by hand.
