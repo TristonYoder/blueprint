@@ -169,12 +169,19 @@ const handler = createMcpHandler(
 // MCP_AUTH_TOKEN is set (real deployments). Unset in local dev, where
 // there's nothing to protect. NEXT_PUBLIC_-free on purpose: never sent to
 // the client, only compared server-side.
+//
+// Accepts the token via the Authorization header OR a ?token= query param —
+// some connector UIs (e.g. Claude Desktop's "remote URL" connector dialog)
+// take a bare URL with no way to set a custom header, so the token has to
+// be able to travel inside the URL itself for those to work at all.
 function withAuth(inner: typeof handler) {
   return async (req: Request) => {
     const expected = process.env.MCP_AUTH_TOKEN;
     if (expected) {
-      const got = req.headers.get("authorization");
-      if (got !== `Bearer ${expected}`) {
+      const header = req.headers.get("authorization");
+      const queryToken = new URL(req.url).searchParams.get("token");
+      const ok = header === `Bearer ${expected}` || queryToken === expected;
+      if (!ok) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     }
