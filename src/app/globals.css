@@ -36,8 +36,8 @@
   --color-bp-redline-border: var(--bp-redline-border);
   --color-bp-stamp: var(--bp-stamp);
 
-  --font-sans: var(--font-plex-sans);
-  --font-mono: var(--font-plex-mono);
+  --font-sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 html {
