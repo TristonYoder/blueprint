@@ -1,7 +1,11 @@
 import OverviewSheet from "@/components/OverviewSheet";
-import { goals, redlines, wins } from "@/lib/mock-data";
+import { getGoals, getRedlines, getWins } from "@/lib/db/queries";
 
-export default function OverviewPage() {
+export const dynamic = "force-dynamic";
+
+export default async function OverviewPage() {
+  const [goals, redlines, wins] = await Promise.all([getGoals(), getRedlines(), getWins()]);
+
   return (
     <OverviewSheet
       revision="REV A"

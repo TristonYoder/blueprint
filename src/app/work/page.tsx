@@ -1,7 +1,10 @@
 import DomainSheet from "@/components/DomainSheet";
-import { goals, redlines, wins } from "@/lib/mock-data";
+import { getGoals, getRedlines, getWins } from "@/lib/db/queries";
 
-export default function WorkPage() {
+export const dynamic = "force-dynamic";
+
+export default async function WorkPage() {
+  const [goals, redlines, wins] = await Promise.all([getGoals(), getRedlines(), getWins()]);
   const domainGoals = goals.filter((g) => g.domain === "work");
   const domainRedlines = redlines.filter((r) => r.domain === "work");
   const domainWins = wins.filter((w) => w.domain === "work");
