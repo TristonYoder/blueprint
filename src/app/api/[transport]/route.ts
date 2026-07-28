@@ -1,7 +1,15 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { getGoals, getRedlines, getWins, createRedline, createWin, removeRedline } from "@/lib/db/queries";
+import {
+  getGoals,
+  getRedlines,
+  getWins,
+  createRedline,
+  createWin,
+  removeRedline,
+  acknowledgeComment,
+} from "@/lib/db/queries";
 
 const DOMAIN = z.enum(["personal", "work", "shared"]);
 const REDLINE_KIND = z.enum(["action", "reference", "sync-error"]);
@@ -58,7 +66,7 @@ const handler = createMcpHandler(
       {
         title: "List active cards",
         description:
-          "List every currently active redline (obstruction) and win (alignment) on the board, optionally filtered by domain. Always call this before creating a card, to avoid duplicating one that's already flagged.",
+          "List every currently active redline (obstruction) and win (alignment) on the board, optionally filtered by domain, each with its comments array. Always call this before creating a card, to avoid duplicating one that's already flagged. Check every card's comments for one with no acknowledgedAt — that's Triston writing back a correction since your last run (e.g. 'I already called him, this is stale'). Weigh it the same way the daily-brief skill weighs a handwritten note: don't silently overwrite it, verify against it, then call resolve_redline or acknowledge_comment once you've acted on it.",
         inputSchema: { domain: DOMAIN.optional() },
       },
       async ({ domain }) => {
@@ -135,6 +143,20 @@ const handler = createMcpHandler(
       async ({ id }) => {
         await removeRedline(id);
         return { content: [{ type: "text", text: `Removed redline ${id}` }] };
+      },
+    );
+
+    server.registerTool(
+      "acknowledge_comment",
+      {
+        title: "Acknowledge a comment",
+        description:
+          "Mark a comment as seen, once you've acted on it — verified it, adjusted the card, or resolved it. Only call this after actually reading and weighing the comment, not as a formality; an unacknowledged comment is the signal that a correction is still outstanding.",
+        inputSchema: { id: z.string() },
+      },
+      async ({ id }) => {
+        await acknowledgeComment(id);
+        return { content: [{ type: "text", text: `Acknowledged comment ${id}` }] };
       },
     );
   },

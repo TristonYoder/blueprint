@@ -2,6 +2,7 @@ import type { Win } from "@/types/blueprint";
 import { BadgeCheck, ArrowUpRight } from "lucide-react";
 import Meter from "./visuals/Meter";
 import Sparkline from "./visuals/Sparkline";
+import CardComments from "./CardComments";
 
 interface WinCardProps {
   win: Win;
@@ -51,6 +52,8 @@ export default function WinCard({ win }: WinCardProps) {
             See: {win.source}
           </a>
         )}
+
+        <CardComments cardKind="win" cardId={win.id} comments={win.comments ?? []} />
       </div>
     </div>
   );

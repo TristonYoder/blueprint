@@ -2,6 +2,7 @@ import type { Redline } from "@/types/blueprint";
 import { Stamp, Check, ArrowUpRight, AlertTriangle } from "lucide-react";
 import Meter from "./visuals/Meter";
 import Sparkline from "./visuals/Sparkline";
+import CardComments from "./CardComments";
 
 interface RedlineCardProps {
   redline: Redline;
@@ -98,6 +99,8 @@ export default function RedlineCard({
             </div>
           )}
         </div>
+
+        <CardComments cardKind="redline" cardId={redline.id} comments={redline.comments ?? []} />
       </div>
     </div>
   );

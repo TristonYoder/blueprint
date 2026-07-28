@@ -1,5 +1,5 @@
 import { db } from "../src/lib/db";
-import { goals, redlines, wins } from "../src/lib/db/schema";
+import { goals, redlines, wins, comments } from "../src/lib/db/schema";
 import {
   goals as mockGoals,
   redlines as mockRedlines,
@@ -8,6 +8,7 @@ import {
 
 async function main() {
   console.log("Seeding goals, redlines, wins from mock-data.ts...");
+  await db.delete(comments);
   await db.delete(redlines);
   await db.delete(wins);
   await db.delete(goals);

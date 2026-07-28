@@ -29,6 +29,22 @@ export type CardVisual =
       flagFromIndex?: number; // points at/after this index render as flagged
     };
 
+export type CardKind = "redline" | "win";
+
+// A margin note — Triston writing back to the agent, not the other way
+// around. Read by the agent's next run via the MCP list_cards tool;
+// acknowledgedAt is set only by the agent (acknowledge_comment), never by
+// the UI just being viewed, so "seen" specifically means "the agent has
+// processed this," distinct from a human having looked at it.
+export interface Comment {
+  id: string;
+  cardKind: CardKind;
+  cardId: string;
+  body: string;
+  createdAt: string; // ISO timestamp
+  acknowledgedAt?: string; // ISO timestamp, set once the agent has processed it
+}
+
 export interface Redline {
   id: string;
   goalId: string;
@@ -40,6 +56,7 @@ export interface Redline {
   sourceHref?: string;
   actionLabel?: string; // only for kind: "action", e.g. "Categorize"
   visual?: CardVisual;
+  comments?: Comment[];
 }
 
 // A deliberate positive signal — a goal genuinely on track, not routine
@@ -55,4 +72,5 @@ export interface Win {
   source: string;
   sourceHref?: string;
   visual?: CardVisual;
+  comments?: Comment[];
 }
