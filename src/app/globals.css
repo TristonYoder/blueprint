@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Blueprint & As-Built — the ground layer is the drawing itself, not a neutral canvas. */
+  --bp-ground: #0e3661;
+  --bp-surface: #123f6f;
+  --bp-surface-2: #17497d;
+
+  --bp-line: rgba(226, 238, 250, 0.14);
+  --bp-line-strong: rgba(226, 238, 250, 0.4);
+
+  --bp-ink: #eaf2fb;
+  --bp-ink-dim: rgba(234, 242, 251, 0.62);
+  --bp-ink-faint: rgba(234, 242, 251, 0.38);
+
+  /* The only saturated color in the system — spent exclusively on obstructions. */
+  --bp-redline: #ff5a3c;
+  --bp-redline-dim: rgba(255, 90, 60, 0.16);
+  --bp-redline-border: rgba(255, 90, 60, 0.55);
+
+  /* Brief, momentary confirmation only — never a persistent status color. */
+  --bp-stamp: #57d18c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bp-ground: var(--bp-ground);
+  --color-bp-surface: var(--bp-surface);
+  --color-bp-surface-2: var(--bp-surface-2);
+  --color-bp-line: var(--bp-line);
+  --color-bp-line-strong: var(--bp-line-strong);
+  --color-bp-ink: var(--bp-ink);
+  --color-bp-ink-dim: var(--bp-ink-dim);
+  --color-bp-ink-faint: var(--bp-ink-faint);
+  --color-bp-redline: var(--bp-redline);
+  --color-bp-redline-dim: var(--bp-redline-dim);
+  --color-bp-redline-border: var(--bp-redline-border);
+  --color-bp-stamp: var(--bp-stamp);
+
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bp-ground);
+  color: var(--bp-ink);
+}
+
+/* Quad-ruled linework grid — the calm, quiet ground every sheet sits on. */
+.bp-grid {
+  background-image:
+    linear-gradient(var(--bp-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bp-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bp-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
