@@ -1,4 +1,5 @@
 import { createMcpHandler } from "mcp-handler";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import {
@@ -164,4 +165,23 @@ const handler = createMcpHandler(
   { basePath: "/api", verboseLogs: true },
 );
 
-export { handler as GET, handler as POST, handler as DELETE };
+// This endpoint can create/resolve cards — bearer-token gated once
+// MCP_AUTH_TOKEN is set (real deployments). Unset in local dev, where
+// there's nothing to protect. NEXT_PUBLIC_-free on purpose: never sent to
+// the client, only compared server-side.
+function withAuth(inner: typeof handler) {
+  return async (req: Request) => {
+    const expected = process.env.MCP_AUTH_TOKEN;
+    if (expected) {
+      const got = req.headers.get("authorization");
+      if (got !== `Bearer ${expected}`) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+    return inner(req);
+  };
+}
+
+const authedHandler = withAuth(handler);
+
+export { authedHandler as GET, authedHandler as POST, authedHandler as DELETE };
