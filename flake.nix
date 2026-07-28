@@ -16,14 +16,16 @@
           version = "0.1.0";
           src = ./.;
 
-          # Placeholder — regenerate with `prefetch-npm-deps package-lock.json`
-          # (or `nix run nixpkgs#prefetch-npm-deps -- package-lock.json`) once
-          # dependencies settle, then replace this hash.
-          npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          npmDepsHash = "sha256-0KLJJYgbqdcPFwEoEy5+Vv+L0rk3vJ4P34uezItnPnU=";
 
           nodejs = pkgs.nodejs_22;
 
           npmBuildScript = "build";
+
+          # `next build` doesn't touch the DB — every route is force-dynamic —
+          # but the Postgres client still wants a well-formed URL to construct
+          # its Pool without throwing at import time during the build.
+          DATABASE_URL = "postgresql://build:build@localhost/build";
 
           installPhase = ''
             runHook preInstall

@@ -52,23 +52,31 @@ Actual Budget first — see PRODUCT.md's "Capabilities and Constraints").
 
 ## Deployment
 
-Built as a standalone Next.js server (`output: "standalone"`) into a container. Two
-equivalent build paths, matching the [stagePlotiphar](../stagePlotiphar) convention:
+Built as a standalone Next.js server (`output: "standalone"`). Three equivalent build
+paths, matching the [stagePlotiphar](../stagePlotiphar) convention:
 
 - `Dockerfile` + `docker-compose.yml` — plain `docker build`/`docker compose up`.
-- `flake.nix` — reproducible build via `nix build .#docker`, used by CI
-  (`.github/workflows/build-container.yml`, self-hosted `david` runner, pushes to GHCR).
+- `flake.nix` `packages.docker` — reproducible container build via `nix build .#docker`,
+  used by CI (`.github/workflows/build-container.yml`, self-hosted `david` runner, pushes
+  to GHCR).
+- `flake.nix` `packages.default` — the native (non-container) build: the same
+  `buildNpmPackage` standalone output, consumed directly by nix-config's
+  `modules.services.productivity.blueprint` NixOS module (no Docker layer at all).
 
-Deploys onto the home NixOS server (`david`) behind Caddy via nix-config's `vHosts`
-registry, Tailscale-only (no public exposure). Secrets are supplied via agenix, the same
-mechanism used for the rest of that infra — see `~/Projects/nix-config`.
+`flake.nix`'s `npmDepsHash` and `flake.lock` are kept fresh automatically —
+`.github/workflows/update-nix-hashes.yml` recomputes `npmDepsHash` whenever
+`package-lock.json` changes (plus a weekly backstop), and
+`.github/workflows/update-flake-lock.yml` runs `nix flake update` weekly. Both verify
+`nix build .#default` still succeeds before committing.
+
+Deploys onto the home NixOS server (`david`) as a native systemd service (not a
+container) behind Caddy via nix-config's `vHosts` registry, at `blueprint.tristonyoder.com`
+— internal-only (no public Cloudflare Tunnel exposure). Secrets are supplied via agenix,
+the same mechanism used for the rest of that infra — see `~/Projects/nix-config`.
 
 **Not yet wired up / open items:**
-- `flake.nix`'s `npmDepsHash` is a placeholder — regenerate once dependencies settle
-  (`nix run nixpkgs#prefetch-npm-deps -- package-lock.json`), and run `nix flake check`
-  on the actual NixOS host (never locally on macOS — see nix-config's own convention).
-- No `vHosts` entry in nix-config yet, no `DATABASE_URL`/secrets wired via agenix yet —
-  local dev currently points at a Homebrew-installed Postgres on this Mac, not `david`'s.
+- No `DATABASE_URL`/secrets wired via agenix yet — local dev currently points at a
+  Homebrew-installed Postgres on this Mac, not `david`'s.
 - The MCP endpoint has no auth yet — fine for local-only use, not for exposing beyond
   the tailnet.
 - Goal-authoring UI still doesn't exist — goals are seeded from `mock-data.ts` by hand.

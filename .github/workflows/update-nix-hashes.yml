@@ -1,0 +1,51 @@
+name: Update Nix hashes
+
+on:
+  push:
+    branches: [main]
+    paths: ["package-lock.json"]
+  schedule:
+    # Weekly backstop in case a push-triggered run was ever missed
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  update-npm-deps-hash:
+    runs-on: [self-hosted, david]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recompute npmDepsHash
+        id: hash
+        run: |
+          NEW_HASH="$(nix run nixpkgs#prefetch-npm-deps -- package-lock.json 2>/dev/null | tail -1)"
+          echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Update flake.nix if the hash changed
+        id: update
+        run: |
+          CURRENT_HASH="$(grep -oP '(?<=npmDepsHash = ")[^"]+' flake.nix)"
+          NEW_HASH="${{ steps.hash.outputs.new_hash }}"
+          if [ "$CURRENT_HASH" = "$NEW_HASH" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sed -i "s|npmDepsHash = \"$CURRENT_HASH\";|npmDepsHash = \"$NEW_HASH\";|" flake.nix
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the flake still builds with the new hash
+        if: steps.update.outputs.changed == 'true'
+        run: nix build .#default
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix
+          git commit -m "chore: update npmDepsHash"
+          git push
