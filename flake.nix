@@ -33,7 +33,11 @@
             cp -r .next/standalone/. $out/
             mkdir -p $out/.next
             cp -r .next/static $out/.next/static
-            cp -r public $out/public
+            # public/ is currently empty and git never tracks empty
+            # directories, so a clean checkout (CI, fetchFromGitHub) won't
+            # have it at all even though it exists locally.
+            mkdir -p $out/public
+            [ -d public ] && cp -r public/. $out/public/ || true
             runHook postInstall
           '';
         };
