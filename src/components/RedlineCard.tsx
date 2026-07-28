@@ -1,5 +1,7 @@
 import type { Redline } from "@/types/blueprint";
 import { Stamp, Check, ArrowUpRight, AlertTriangle } from "lucide-react";
+import Meter from "./visuals/Meter";
+import Sparkline from "./visuals/Sparkline";
 
 interface RedlineCardProps {
   redline: Redline;
@@ -36,6 +38,23 @@ export default function RedlineCard({
 
         {/* Detail */}
         <div className="text-bp-ink-dim text-sm">{redline.detail}</div>
+
+        {/* The instrument readout — shows the number instead of just naming it */}
+        {redline.visual?.kind === "meter" && (
+          <Meter
+            unit={redline.visual.unit}
+            spent={redline.visual.spent}
+            limit={redline.visual.limit}
+          />
+        )}
+        {redline.visual?.kind === "trend" && (
+          <Sparkline
+            unit={redline.visual.unit}
+            points={redline.visual.points}
+            baseline={redline.visual.baseline}
+            flagFromIndex={redline.visual.flagFromIndex}
+          />
+        )}
 
         {/* Footer: kind-specific action/reference/error indicator */}
         <div>

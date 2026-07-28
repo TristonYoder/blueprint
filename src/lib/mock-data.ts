@@ -27,6 +27,7 @@ export const redlines: Redline[] = [
       "Groceries run is $340 over plan for the month once these are filed — Actual Budget has them sitting in Uncategorized.",
     source: "Actual Budget",
     actionLabel: "Categorize",
+    visual: { kind: "meter", unit: "$", spent: 1240, limit: 900 },
   },
   {
     id: "rl-2",
@@ -37,6 +38,13 @@ export const redlines: Redline[] = [
     detail: "Apple Health shows a sustained rise against your 90-day baseline — worth a look before it's a trend.",
     source: "Apple Health",
     sourceHref: "#",
+    visual: {
+      kind: "trend",
+      unit: " bpm",
+      points: [57, 58, 56, 59, 58, 57, 59, 60, 61, 62, 63, 64, 63, 65],
+      baseline: 58,
+      flagFromIndex: 7,
+    },
   },
   {
     id: "rl-3",
