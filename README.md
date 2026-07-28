@@ -57,8 +57,9 @@ paths, matching the [stagePlotiphar](../stagePlotiphar) convention:
 
 - `Dockerfile` + `docker-compose.yml` — plain `docker build`/`docker compose up`.
 - `flake.nix` `packages.docker` — reproducible container build via `nix build .#docker`,
-  used by CI (`.github/workflows/build-container.yml`, self-hosted `david` runner, pushes
-  to GHCR).
+  used by CI (`.github/workflows/build-container.yml`, GitHub-hosted runner, pushes to
+  GHCR). This is a standalone public project's CI — it doesn't depend on any private
+  infra (david), unlike nix-config's own CI which legitimately targets david directly.
 - `flake.nix` `packages.default` — the native (non-container) build: the same
   `buildNpmPackage` standalone output, consumed directly by nix-config's
   `modules.services.productivity.blueprint` NixOS module (no Docker layer at all).
