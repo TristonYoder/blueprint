@@ -1,6 +1,6 @@
 "use client";
 
-import type { Domain, Goal, Redline } from "@/types/blueprint";
+import type { Domain, Goal, Redline, Win } from "@/types/blueprint";
 import { useRedlineResolution } from "@/hooks/useRedlineResolution";
 import TitleBlock from "./TitleBlock";
 import RedlineGrid from "./RedlineGrid";
@@ -9,6 +9,7 @@ interface OverviewSheetProps {
   revision: string;
   dateLabel: string;
   redlines: Redline[];
+  wins?: Win[];
   goals: Goal[];
 }
 
@@ -23,7 +24,13 @@ const DOMAINS: { key: Domain; code: string; label: string }[] = [
 // each area. Splitting into domain columns keeps the whole plan scannable
 // at once; each column still reduces to the same clean/no-plan states as
 // its own dedicated sheet.
-export default function OverviewSheet({ revision, dateLabel, redlines, goals }: OverviewSheetProps) {
+export default function OverviewSheet({
+  revision,
+  dateLabel,
+  redlines,
+  wins = [],
+  goals,
+}: OverviewSheetProps) {
   const { active, resolvingIds, handleResolve } = useRedlineResolution(redlines);
   const hasAnyGoals = goals.length > 0;
 
@@ -41,6 +48,7 @@ export default function OverviewSheet({ revision, dateLabel, redlines, goals }: 
           {DOMAINS.map((domain) => {
             const domainHasGoals = goals.some((g) => g.domain === domain.key);
             const domainActive = active.filter((r) => r.domain === domain.key);
+            const domainWins = wins.filter((w) => w.domain === domain.key);
 
             return (
               <div key={domain.key} className="flex flex-col gap-3">
@@ -52,6 +60,7 @@ export default function OverviewSheet({ revision, dateLabel, redlines, goals }: 
                   domainLabel={domain.label}
                   hasGoals={domainHasGoals}
                   active={domainActive}
+                  wins={domainWins}
                   resolvingIds={resolvingIds}
                   onResolve={handleResolve}
                   compact

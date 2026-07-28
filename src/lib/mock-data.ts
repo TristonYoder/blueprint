@@ -1,4 +1,4 @@
-import type { Goal, Redline } from "@/types/blueprint";
+import type { Goal, Redline, Win } from "@/types/blueprint";
 
 // Sample data standing in for the real integration layer (Asana, Actual
 // Budget, Fantastical, Gmail/Outlook, iMessage/Matrix, Home Assistant,
@@ -12,8 +12,10 @@ export const goals: Goal[] = [
   { id: "goal-health", domain: "personal", label: "Resting HR trend, weekly check" },
   { id: "goal-comms", domain: "personal", label: "Check in with Dad monthly" },
   { id: "goal-server", domain: "personal", label: "Home server stays healthy" },
+  { id: "goal-dining", domain: "personal", label: "Dining out under $200/mo" },
   { id: "goal-sprint", domain: "work", label: "Ministry sprint on track" },
   { id: "goal-inbox", domain: "work", label: "No stale unanswered emails" },
+  { id: "goal-response", domain: "work", label: "Reply to Campus TDs within 48h" },
 ];
 
 export const redlines: Redline[] = [
@@ -95,5 +97,38 @@ export const redlines: Redline[] = [
     detail: "Both sit under this week's sprint board, past their due date.",
     source: "Asana",
     actionLabel: "Review",
+  },
+];
+
+// A couple of deliberate wins — real, nameable alignment worth noting, not
+// routine "all fine" status. Most goals with no obstruction just produce no
+// card at all (CleanSheet); these two are here specifically to demonstrate
+// the win-card treatment.
+export const wins: Win[] = [
+  {
+    id: "win-1",
+    goalId: "goal-dining",
+    domain: "personal",
+    title: "Dining out on track",
+    detail: "Well under plan with a week left in the month — nothing to file, nothing to flag.",
+    source: "Actual Budget",
+    sourceHref: "#",
+    visual: { kind: "meter", unit: "$", spent: 140, limit: 200 },
+  },
+  {
+    id: "win-2",
+    goalId: "goal-response",
+    domain: "work",
+    title: "Campus TD reply time down to 36 hrs",
+    detail: "Trending well under your 48-hour target for two weeks straight.",
+    source: "Outlook",
+    sourceHref: "#",
+    visual: {
+      kind: "trend",
+      unit: " hrs",
+      points: [72, 68, 65, 60, 52, 48, 40, 36],
+      baseline: 48,
+      flagFromIndex: 3,
+    },
   },
 ];

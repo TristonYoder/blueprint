@@ -3,6 +3,9 @@ interface SparklineProps {
   points: number[];
   baseline?: number;
   flagFromIndex?: number;
+  /** "obstruction" (default) renders the flagged segment in redline red.
+   * "positive" is for Win cards — same tick/segment language, green. */
+  tone?: "obstruction" | "positive";
 }
 
 const WIDTH = 220;
@@ -26,8 +29,18 @@ function toPath(points: number[], min: number, max: number, from: number, to: nu
 // A trend line, not a full chart: the "since here" tick marks where the
 // obstruction starts, echoing the same reference-tick language as the
 // budget meter's limit line, rather than inventing a second visual grammar.
-export default function Sparkline({ unit, points, baseline, flagFromIndex }: SparklineProps) {
+export default function Sparkline({
+  unit,
+  points,
+  baseline,
+  flagFromIndex,
+  tone = "obstruction",
+}: SparklineProps) {
   if (points.length < 2) return null;
+
+  const flagStroke = tone === "positive" ? "stroke-bp-stamp" : "stroke-bp-redline";
+  const flagFill = tone === "positive" ? "fill-bp-stamp" : "fill-bp-redline";
+  const flagText = tone === "positive" ? "text-bp-stamp" : "text-bp-redline";
 
   const flagFrom = flagFromIndex ?? points.length;
   const allValues = baseline !== undefined ? [...points, baseline] : points;
@@ -84,18 +97,18 @@ export default function Sparkline({ unit, points, baseline, flagFromIndex }: Spa
         )}
         <path d={normalPath} fill="none" className="stroke-bp-ink-dim" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {flaggedPath && (
-          <path d={flaggedPath} fill="none" className="stroke-bp-redline" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <path d={flaggedPath} fill="none" className={flagStroke} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         )}
         <circle
           cx={lastX}
           cy={lastY}
           r={4}
-          className={`stroke-bp-surface ${isFlaggedEnd ? "fill-bp-redline" : "fill-bp-ink"}`}
+          className={`stroke-bp-surface ${isFlaggedEnd ? flagFill : "fill-bp-ink"}`}
           strokeWidth={2}
         />
       </svg>
       <div className="flex flex-col">
-        <span className={`bp-label font-semibold ${isFlaggedEnd ? "text-bp-redline" : "text-bp-ink"}`}>
+        <span className={`bp-label font-semibold ${isFlaggedEnd ? flagText : "text-bp-ink"}`}>
           {points[lastIndex]}
           {unit}
         </span>

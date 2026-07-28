@@ -1,6 +1,6 @@
 "use client";
 
-import type { Redline } from "@/types/blueprint";
+import type { Redline, Win } from "@/types/blueprint";
 import { useRedlineResolution } from "@/hooks/useRedlineResolution";
 import TitleBlock from "./TitleBlock";
 import RedlineGrid from "./RedlineGrid";
@@ -11,6 +11,7 @@ interface DomainSheetProps {
   dateLabel: string;
   domainLabel: string;
   redlines: Redline[];
+  wins?: Win[];
   hasGoals: boolean;
 }
 
@@ -24,6 +25,7 @@ export default function DomainSheet({
   dateLabel,
   domainLabel,
   redlines,
+  wins = [],
   hasGoals,
 }: DomainSheetProps) {
   const { active, resolvingIds, handleResolve } = useRedlineResolution(redlines);
@@ -43,6 +45,7 @@ export default function DomainSheet({
             domainLabel={domainLabel}
             hasGoals={hasGoals}
             active={active}
+            wins={wins}
             resolvingIds={resolvingIds}
             onResolve={handleResolve}
           />

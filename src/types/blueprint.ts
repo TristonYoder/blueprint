@@ -12,7 +12,9 @@ export type RedlineKind =
   | "sync-error"; // A source Blueprint couldn't reach — itself an obstruction.
 
 // Small inline instrument readouts — not a chart library, two fixed forms.
-export type RedlineVisual =
+// Shared by Redline (obstruction, redline-red) and Win (alignment, green) —
+// same grammar, different tone.
+export type CardVisual =
   | {
       kind: "meter";
       unit: string; // e.g. "$"
@@ -24,7 +26,7 @@ export type RedlineVisual =
       unit: string; // e.g. "bpm"
       points: number[]; // chronological
       baseline?: number; // reference line, e.g. a 90-day average
-      flagFromIndex?: number; // points at/after this index render as the obstruction
+      flagFromIndex?: number; // points at/after this index render as flagged
     };
 
 export interface Redline {
@@ -37,5 +39,20 @@ export interface Redline {
   source: string; // e.g. "Actual Budget", "Asana"
   sourceHref?: string;
   actionLabel?: string; // only for kind: "action", e.g. "Categorize"
-  visual?: RedlineVisual;
+  visual?: CardVisual;
+}
+
+// A deliberate positive signal — a goal genuinely on track, not routine
+// "all fine" noise. Rare by design: most goals with no obstruction simply
+// produce no card at all (see CleanSheet). A Win is reserved for a real,
+// nameable alignment worth noting — never actionable, never red.
+export interface Win {
+  id: string;
+  goalId: string;
+  domain: Domain;
+  title: string;
+  detail: string;
+  source: string;
+  sourceHref?: string;
+  visual?: CardVisual;
 }
