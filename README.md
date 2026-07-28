@@ -41,10 +41,17 @@ Connect a local Claude Code session to the dev server with:
 claude mcp add --transport http blueprint http://localhost:3211/api/mcp
 ```
 
-The deployed endpoint (`https://blueprint.tristonyoder.com/api/mcp`) is bearer-token gated —
-`MCP_AUTH_TOKEN` is set via the paired nix-config secret (`blueprint-mcp-token`), and any
-caller must send `Authorization: Bearer <token>`. `claude mcp add` supports this with
-`--header "Authorization: Bearer <token>"`.
+Or the deployed endpoint directly: `https://blueprint.tristonyoder.com/api/mcp`.
+
+**Auth is currently off.** The route supports bearer-token gating (`MCP_AUTH_TOKEN`,
+checked via either an `Authorization: Bearer <token>` header or a `?token=<token>` query
+param — the latter for connector UIs that only take a bare URL, like Claude Desktop's
+remote-connector dialog) but nothing sets that env var on `david` yet — the paired
+nix-config change (`blueprint-mcp-token` agenix secret) is sitting on an undeployed branch
+(`feat/blueprint-mcp-auth`), not merged. Deliberate for now: the endpoint is already
+Tailscale-only (unreachable from the open internet), which is the real gate at this scale.
+Merge and rebuild whenever card-mutation-over-the-tailnet-with-no-token stops being an
+acceptable risk.
 
 Per PRODUCT.md's "signal, not noise" principle, every tool's description tells the calling
 agent to check `list_cards` first (avoid duplicate flags) and to only create a card for a
