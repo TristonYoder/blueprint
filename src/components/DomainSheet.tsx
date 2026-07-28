@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { Redline } from "@/types/blueprint";
+import { useRedlineResolution } from "@/hooks/useRedlineResolution";
 import TitleBlock from "./TitleBlock";
-import RedlineCard from "./RedlineCard";
-import CleanSheet from "./CleanSheet";
-import NoPlanState from "./NoPlanState";
+import RedlineGrid from "./RedlineGrid";
 
 interface DomainSheetProps {
   sheetName: string;
@@ -16,10 +14,10 @@ interface DomainSheetProps {
   hasGoals: boolean;
 }
 
-// Owns the resolve/stamp interaction so the title block's live obstruction
-// count and the card list stay in sync. Only "action" redlines resolve this
-// way — "reference" and "sync-error" cards clear only when the underlying
-// source data changes, never by dismissal (see RedlineCard).
+// Single-domain sheet (Personal/Work/Shared). Cards flow into a responsive
+// grid on wide screens rather than staying pinned to one narrow column —
+// dashboard scannability wins over a strict single-sheet reading order once
+// there's room for it.
 export default function DomainSheet({
   sheetName,
   revision,
@@ -28,17 +26,7 @@ export default function DomainSheet({
   redlines,
   hasGoals,
 }: DomainSheetProps) {
-  const [resolvingIds, setResolvingIds] = useState<Set<string>>(new Set());
-  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
-
-  function handleResolve(id: string) {
-    setResolvingIds((prev) => new Set(prev).add(id));
-    setTimeout(() => {
-      setResolvedIds((prev) => new Set(prev).add(id));
-    }, 500);
-  }
-
-  const active = redlines.filter((r) => !resolvedIds.has(r.id));
+  const { active, resolvingIds, handleResolve } = useRedlineResolution(redlines);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -50,22 +38,15 @@ export default function DomainSheet({
         hasGoals={hasGoals}
       />
       <div className="bp-grid flex-1 p-6">
-        {!hasGoals ? (
-          <NoPlanState domainLabel={domainLabel} />
-        ) : active.length === 0 ? (
-          <CleanSheet domainLabel={domainLabel} />
-        ) : (
-          <div className="mx-auto flex max-w-2xl flex-col gap-3">
-            {active.map((redline) => (
-              <RedlineCard
-                key={redline.id}
-                redline={redline}
-                resolving={resolvingIds.has(redline.id)}
-                onResolve={handleResolve}
-              />
-            ))}
-          </div>
-        )}
+        <div className="mx-auto max-w-6xl">
+          <RedlineGrid
+            domainLabel={domainLabel}
+            hasGoals={hasGoals}
+            active={active}
+            resolvingIds={resolvingIds}
+            onResolve={handleResolve}
+          />
+        </div>
       </div>
     </div>
   );
