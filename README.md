@@ -30,10 +30,22 @@ npm run db:seed       # load mock-data.ts's content as a starting dataset
 ## Populating the board: the MCP server, not integration adapters (yet)
 
 v1's population strategy is deliberately the simplest thing that works: Blueprint exposes
-an MCP server (`src/app/api/[transport]/route.ts`, reachable at `/api/mcp`) with five tools
-— `list_goals`, `list_cards`, `create_redline`, `create_win`, `resolve_redline` — and an
-agent (the AIOS `daily-brief` skill, updated with a Blueprint section) calls them directly
-after evaluating the real sources itself. No per-source sync workers, no scheduled jobs yet.
+an MCP server (`src/app/api/[transport]/route.ts`, reachable at `/api/mcp`) — the entire app
+is agentically managed, on purpose: there's no manual authoring UI for goals or cards, only
+the tools below, called by an agent (the AIOS `daily-brief` skill, updated with a Blueprint
+section) after it evaluates the real sources itself. No per-source sync workers, no scheduled
+jobs yet.
+
+- **Goals** (the plan itself, Blueprint's only source of truth for it): `list_goals`,
+  `create_goal`, `update_goal`, `delete_goal` (cascades to any redlines/wins still pointing
+  at it).
+- **Redlines** (obstructions): `create_redline`, `update_redline` (patch fields in place —
+  omit to leave untouched, `null` to clear an optional one), `resolve_redline` (hard
+  delete).
+- **Wins** (alignments): `create_win`, `update_win`, `remove_win`.
+- **Cards generally**: `list_cards` (both redlines and wins, each with its comments array).
+- **Comments**: `acknowledge_comment` — comments themselves are Triston-authored via the UI
+  only, not agent-created; see below.
 
 Connect a local Claude Code session to the dev server with:
 

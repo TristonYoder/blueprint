@@ -6,9 +6,15 @@ import {
   getGoals,
   getRedlines,
   getWins,
+  createGoal,
+  updateGoal,
+  removeGoal,
   createRedline,
+  updateRedline,
   createWin,
+  updateWin,
   removeRedline,
+  removeWin,
   acknowledgeComment,
 } from "@/lib/db/queries";
 
@@ -39,6 +45,28 @@ const VISUAL = z
     "Optional inline instrument readout — a meter (spend vs. limit) or a trend line. Only include when you have real numbers; omit rather than approximate.",
   );
 
+// Same shape, but for update tools: omit a field to leave it untouched,
+// pass null to explicitly clear it (e.g. dropping a visual when a card no
+// longer has real numbers behind it).
+const VISUAL_UPDATE = z
+  .union([
+    z.object({
+      kind: z.literal("meter"),
+      unit: z.string(),
+      spent: z.number(),
+      limit: z.number(),
+    }),
+    z.object({
+      kind: z.literal("trend"),
+      unit: z.string(),
+      points: z.array(z.number()),
+      baseline: z.number().optional(),
+      flagFromIndex: z.number().optional(),
+    }),
+  ])
+  .nullable()
+  .optional();
+
 // Every tool here is meant for an agent (e.g. the daily-brief skill)
 // re-evaluating Blueprint's plan against live sources, not for a human.
 // See PRODUCT.md's "signal, not noise" principle: only call create_redline
@@ -59,6 +87,56 @@ const handler = createMcpHandler(
         const goals = await getGoals();
         const filtered = domain ? goals.filter((g) => g.domain === domain) : goals;
         return { content: [{ type: "text", text: JSON.stringify(filtered, null, 2) }] };
+      },
+    );
+
+    server.registerTool(
+      "create_goal",
+      {
+        title: "Create a goal",
+        description:
+          "Add a goal to Blueprint's plan — this app has no other source of truth for goals; you're authoring the plan itself, not reporting on it. Only create one from something Triston actually articulated (a stated target, a commitment, an explicit ask) — never infer a goal from routine data just because a pattern exists. Every redline/win must trace back to a real goal, so a goal that doesn't reflect an actual intention corrupts the whole 'signal, not noise' contract.",
+        inputSchema: {
+          domain: DOMAIN,
+          label: z.string().describe('Short, concrete: "Groceries under $900/mo", not "Spend less"'),
+        },
+      },
+      async (input) => {
+        const id = `goal-${randomUUID()}`;
+        await createGoal({ id, ...input });
+        return { content: [{ type: "text", text: `Created goal ${id}` }] };
+      },
+    );
+
+    server.registerTool(
+      "update_goal",
+      {
+        title: "Update a goal",
+        description:
+          "Adjust an existing goal's label or domain — e.g. the plan itself changed (a budget limit moved, a cadence changed). This is not how you clear a violation of the goal; that's resolve_redline/create_win against the unchanged goal. Only touch the goal record when the plan itself is what changed.",
+        inputSchema: {
+          id: z.string(),
+          domain: DOMAIN.optional(),
+          label: z.string().optional(),
+        },
+      },
+      async ({ id, ...patch }) => {
+        await updateGoal(id, patch);
+        return { content: [{ type: "text", text: `Updated goal ${id}` }] };
+      },
+    );
+
+    server.registerTool(
+      "delete_goal",
+      {
+        title: "Delete a goal",
+        description:
+          "Remove a goal entirely — the plan no longer includes it. Cascades: every redline and win still attached to it is removed too (with their comments), since a card can't outlive the goal it traces back to. Use sparingly and only when the goal is genuinely gone, not as a way to silence a hard-to-satisfy one.",
+        inputSchema: { id: z.string() },
+      },
+      async ({ id }) => {
+        await removeGoal(id);
+        return { content: [{ type: "text", text: `Deleted goal ${id}` }] };
       },
     );
 
@@ -111,6 +189,31 @@ const handler = createMcpHandler(
     );
 
     server.registerTool(
+      "update_redline",
+      {
+        title: "Update a redline in place",
+        description:
+          "Adjust an existing redline's fields — e.g. the $ amount changed since it was flagged, or the detail needs refreshing — without losing its id, comments, or resolve history. Omit a field to leave it untouched; pass null for sourceHref/actionLabel/visual to explicitly clear it. Prefer this over delete-and-recreate when it's still the same underlying obstruction, just updated numbers.",
+        inputSchema: {
+          id: z.string(),
+          goalId: z.string().optional(),
+          domain: DOMAIN.optional(),
+          kind: REDLINE_KIND.optional(),
+          title: z.string().optional(),
+          detail: z.string().optional(),
+          source: z.string().optional(),
+          sourceHref: z.string().nullable().optional(),
+          actionLabel: z.string().nullable().optional(),
+          visual: VISUAL_UPDATE,
+        },
+      },
+      async ({ id, ...patch }) => {
+        await updateRedline(id, patch);
+        return { content: [{ type: "text", text: `Updated redline ${id}` }] };
+      },
+    );
+
+    server.registerTool(
       "create_win",
       {
         title: "Create a win (alignment)",
@@ -130,6 +233,43 @@ const handler = createMcpHandler(
         const id = `win-${randomUUID()}`;
         await createWin({ id, ...input });
         return { content: [{ type: "text", text: `Created win ${id}` }] };
+      },
+    );
+
+    server.registerTool(
+      "update_win",
+      {
+        title: "Update a win in place",
+        description:
+          "Adjust an existing win's fields — e.g. the numbers moved further in the good direction — without losing its id or comments. Omit a field to leave it untouched; pass null for sourceHref/visual to explicitly clear it.",
+        inputSchema: {
+          id: z.string(),
+          goalId: z.string().optional(),
+          domain: DOMAIN.optional(),
+          title: z.string().optional(),
+          detail: z.string().optional(),
+          source: z.string().optional(),
+          sourceHref: z.string().nullable().optional(),
+          visual: VISUAL_UPDATE,
+        },
+      },
+      async ({ id, ...patch }) => {
+        await updateWin(id, patch);
+        return { content: [{ type: "text", text: `Updated win ${id}` }] };
+      },
+    );
+
+    server.registerTool(
+      "remove_win",
+      {
+        title: "Remove a win",
+        description:
+          "Remove a win that no longer holds — the alignment it named isn't true anymore. There's no history kept; this is a hard removal.",
+        inputSchema: { id: z.string() },
+      },
+      async ({ id }) => {
+        await removeWin(id);
+        return { content: [{ type: "text", text: `Removed win ${id}` }] };
       },
     );
 

@@ -81,6 +81,43 @@ export async function getGoals(): Promise<Goal[]> {
   return rows.map(toGoal);
 }
 
+export interface CreateGoalInput {
+  id: string;
+  domain: Domain;
+  label: string;
+}
+
+export async function createGoal(input: CreateGoalInput): Promise<void> {
+  await db.insert(goals).values(input);
+}
+
+export interface UpdateGoalInput {
+  domain?: Domain;
+  label?: string;
+}
+
+export async function updateGoal(id: string, patch: UpdateGoalInput): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await db.update(goals).set(patch).where(eq(goals.id, id));
+}
+
+/**
+ * Cascades: a goal with no cards left pointing at it is the point (an
+ * orphaned redline/win referencing a deleted goal would break "every card
+ * traces back to a stated goal" — see PRODUCT.md's Product Principles).
+ */
+export async function removeGoal(id: string): Promise<void> {
+  const [relatedRedlines, relatedWins] = await Promise.all([
+    db.select({ id: redlines.id }).from(redlines).where(eq(redlines.goalId, id)),
+    db.select({ id: wins.id }).from(wins).where(eq(wins.goalId, id)),
+  ]);
+  await Promise.all([
+    ...relatedRedlines.map((r) => removeRedline(r.id)),
+    ...relatedWins.map((w) => removeWin(w.id)),
+  ]);
+  await db.delete(goals).where(eq(goals.id, id));
+}
+
 export async function getRedlines(): Promise<Redline[]> {
   const rows = await db.select().from(redlines).orderBy(redlines.createdAt);
   const commentMap = await commentsByCardId(
@@ -116,6 +153,23 @@ export async function createRedline(input: CreateRedlineInput): Promise<void> {
   await db.insert(redlines).values(input);
 }
 
+export interface UpdateRedlineInput {
+  goalId?: string;
+  domain?: Domain;
+  kind?: RedlineKind;
+  title?: string;
+  detail?: string;
+  source?: string;
+  sourceHref?: string | null;
+  actionLabel?: string | null;
+  visual?: CardVisual | null;
+}
+
+export async function updateRedline(id: string, patch: UpdateRedlineInput): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await db.update(redlines).set(patch).where(eq(redlines.id, id));
+}
+
 export interface CreateWinInput {
   id: string;
   goalId: string;
@@ -129,6 +183,21 @@ export interface CreateWinInput {
 
 export async function createWin(input: CreateWinInput): Promise<void> {
   await db.insert(wins).values(input);
+}
+
+export interface UpdateWinInput {
+  goalId?: string;
+  domain?: Domain;
+  title?: string;
+  detail?: string;
+  source?: string;
+  sourceHref?: string | null;
+  visual?: CardVisual | null;
+}
+
+export async function updateWin(id: string, patch: UpdateWinInput): Promise<void> {
+  if (Object.keys(patch).length === 0) return;
+  await db.update(wins).set(patch).where(eq(wins.id, id));
 }
 
 /** Resolving/clearing a redline just removes it — v1 keeps no history. */
